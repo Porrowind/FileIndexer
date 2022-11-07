@@ -7,20 +7,28 @@ import solo.egorov.file_indexer.core.Document;
 import solo.egorov.file_indexer.core.FileIndexer;
 import solo.egorov.file_indexer.core.FileIndexerQuery;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 class SearchCommand extends AbstractCommand
 {
-    private static final String TARGET = "TARGET";
+    private static final String STRICT = "s";
 
     @Override
     public ActionResult execute(ApplicationContext context, Map<String, String> args)
     {
         FileIndexer fileIndexer = context.getFileIndexer();
 
-        List<Document> documents = fileIndexer.search(new FileIndexerQuery().setSearchText(args.get(TARGET)));
+        FileIndexerQuery query = new FileIndexerQuery()
+            .setSearchText(args.get(TARGET));
+
+        Boolean strict = parseBoolean(args.get(STRICT));
+        if (strict != null)
+        {
+            query.setStrict(strict);
+        }
+
+        List<Document> documents = fileIndexer.search(query);
 
         if (documents == null || documents.isEmpty())
         {
@@ -28,21 +36,14 @@ class SearchCommand extends AbstractCommand
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Documents found: ");
+        boolean first = true;
         for (Document document : documents)
         {
-            sb.append("\n\t").append(document.getUri());
+            sb.append(first ? "\t" : "\n\t").append(document.getUri());
+            first = false;
         }
 
         return ActionResult.success(sb.toString());
-    }
-
-    @Override
-    Map<String, String> parseArguments(String args)
-    {
-        Map<String, String> parsedArguments = new HashMap<>();
-        parsedArguments.put(TARGET, args);
-        return parsedArguments;
     }
 
     @Override
@@ -54,5 +55,13 @@ class SearchCommand extends AbstractCommand
         }
 
         return ActionResult.success();
+    }
+
+    @Override
+    public String getInfo()
+    {
+        return "search - Search in index" +
+            "\n\t-s=<true/false> - Keep words order strict" +
+            "\n\t<searchText> - Text to search; can be multiple words; words can contain wildcards (*)";
     }
 }

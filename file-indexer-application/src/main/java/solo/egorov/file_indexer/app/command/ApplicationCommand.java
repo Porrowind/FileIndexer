@@ -11,11 +11,6 @@ public interface ApplicationCommand
 {
     ActionResult execute(ApplicationContext context, Map<String, String> args) throws ApplicationException;
 
-    default boolean isExitCommand()
-    {
-        return false;
-    }
-
     default String getInfo()
     {
         return StringUtils.EMPTY;

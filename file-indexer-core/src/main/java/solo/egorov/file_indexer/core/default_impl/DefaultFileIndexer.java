@@ -244,6 +244,12 @@ public class DefaultFileIndexer implements FileIndexer
         return queryProcessor.process(query, indexStorage, queryTokenizer);
     }
 
+    @Override
+    public void cleanup()
+    {
+        indexStorage.cleanup();
+    }
+
     private void indexSingleFile(String path)
     {
         if (indexWatcherRegistry != null)

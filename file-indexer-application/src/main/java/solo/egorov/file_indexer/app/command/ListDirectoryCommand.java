@@ -30,4 +30,10 @@ public class ListDirectoryCommand extends AbstractCommand
             throw new ApplicationException(ioe);
         }
     }
+
+    @Override
+    public String getInfo()
+    {
+        return "dir - List current directory";
+    }
 }

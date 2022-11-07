@@ -1,21 +1,26 @@
 package solo.egorov.file_indexer.app.command;
 
-import org.apache.commons.lang3.StringUtils;
 import solo.egorov.file_indexer.app.ActionResult;
 import solo.egorov.file_indexer.app.ApplicationContext;
+import solo.egorov.file_indexer.core.FileIndexer;
 
 import java.util.Map;
 
-class ErrorCommand extends AbstractCommand
+class CleanupCommand extends AbstractCommand
 {
     @Override
     public ActionResult execute(ApplicationContext context, Map<String, String> args)
     {
-        if (args != null && StringUtils.isNotBlank(args.get(TARGET)))
-        {
-            return ActionResult.failure("Error: " + args.get(TARGET));
-        }
+        FileIndexer fileIndexer = context.getFileIndexer();
+
+        fileIndexer.cleanup();
 
         return ActionResult.success();
+    }
+
+    @Override
+    public String getInfo()
+    {
+        return "cleanup - Cleanup the index memory";
     }
 }

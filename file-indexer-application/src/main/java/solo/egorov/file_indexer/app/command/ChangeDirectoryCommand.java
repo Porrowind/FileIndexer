@@ -5,13 +5,10 @@ import solo.egorov.file_indexer.app.ActionResult;
 import solo.egorov.file_indexer.app.ApplicationContext;
 import solo.egorov.file_indexer.app.file.FileTraveler;
 
-import java.util.HashMap;
 import java.util.Map;
 
 class ChangeDirectoryCommand extends AbstractCommand
 {
-    private static final String TARGET = "TARGET";
-
     @Override
     public ActionResult execute(ApplicationContext context, Map<String, String> args)
     {
@@ -19,14 +16,6 @@ class ChangeDirectoryCommand extends AbstractCommand
 
         fileTraveler.cd(args.get(TARGET));
         return ActionResult.success();
-    }
-
-    @Override
-    Map<String, String> parseArguments(String args)
-    {
-        Map<String, String> parsedArguments = new HashMap<>();
-        parsedArguments.put(TARGET, args);
-        return parsedArguments;
     }
 
     @Override
@@ -38,5 +27,12 @@ class ChangeDirectoryCommand extends AbstractCommand
         }
 
         return ActionResult.success();
+    }
+
+    @Override
+    public String getInfo()
+    {
+        return "cd - Change path to specified directory" +
+            "\n\t<path> - Absolute or relative path to directory";
     }
 }

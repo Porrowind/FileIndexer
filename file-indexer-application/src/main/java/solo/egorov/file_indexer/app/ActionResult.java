@@ -2,12 +2,19 @@ package solo.egorov.file_indexer.app;
 
 public class ActionResult
 {
-    private boolean success;
-    private String message;
+    private final boolean success;
+    private final boolean exit;
+    private final String message;
 
     private ActionResult(boolean success, String message)
     {
+        this(success, message, false);
+    }
+
+    private ActionResult(boolean success, String message, boolean exit)
+    {
         this.success = success;
+        this.exit = exit;
         this.message = message;
     }
 
@@ -21,14 +28,19 @@ public class ActionResult
         return new ActionResult(true, message);
     }
 
+    public static ActionResult failure()
+    {
+        return failure(null);
+    }
+
     public static ActionResult failure(String message)
     {
         return new ActionResult(false, message);
     }
 
-    public static ActionResult failure()
+    public static ActionResult exit()
     {
-        return failure(null);
+        return new ActionResult(true, null, true);
     }
 
     public boolean isSuccess()
@@ -36,18 +48,13 @@ public class ActionResult
         return success;
     }
 
-    public void setSuccess(boolean success)
+    public boolean isExit()
     {
-        this.success = success;
+        return exit;
     }
 
     public String getMessage()
     {
         return message;
-    }
-
-    public void setMessage(String message)
-    {
-        this.message = message;
     }
 }

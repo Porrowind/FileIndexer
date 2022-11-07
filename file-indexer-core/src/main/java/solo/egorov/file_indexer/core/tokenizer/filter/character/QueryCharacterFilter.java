@@ -26,6 +26,6 @@ public class QueryCharacterFilter implements CharacterFilter
 
     private boolean isWildcardSymbol(char ch)
     {
-        return ch == '*' || ch == '%';
+        return ch == '*';
     }
 }

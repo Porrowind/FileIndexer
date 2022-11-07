@@ -1,0 +1,10 @@
+workerThreadsCount=4
+minTokenLength=3
+maxTokenLength=128
+maxFileSize=5242880
+processHiddenFiles=false
+processFilesWithNoExtension=false
+processFilesWithUnknownExtension=false
+watcher.enabled=true
+watcher.timeout=1000
+watcher.fileTimeout=300000

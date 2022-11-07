@@ -109,6 +109,7 @@ public class DefaultQueryProcessor implements QueryProcessor
                 return new ArrayList<>();
             }
 
+            Map<Long, List<PotentialMatch>> newPotentialMatchesById = new HashMap<>();
             for (Document matchingDocument : matchingDocuments)
             {
                 List<PotentialMatch> currentPotentialMatches = potentialMatchesById.get(matchingDocument.getId());
@@ -144,16 +145,14 @@ public class DefaultQueryProcessor implements QueryProcessor
                     }
                 }
 
-                if (newPotentialMatches.isEmpty())
+                if (!newPotentialMatches.isEmpty())
                 {
-                    potentialMatchesById.remove(matchingDocument.getId());
-                }
-                else
-                {
-                    potentialMatchesById.put(matchingDocument.getId(), newPotentialMatches);
+                    newPotentialMatchesById.put(matchingDocument.getId(), newPotentialMatches);
                     documentUriById.put(matchingDocument.getId(), matchingDocument.getUri());
                 }
             }
+
+            potentialMatchesById = newPotentialMatchesById;
 
             if (potentialMatchesById.isEmpty())
             {

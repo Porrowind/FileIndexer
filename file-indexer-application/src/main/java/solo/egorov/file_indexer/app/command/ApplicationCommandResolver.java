@@ -2,13 +2,6 @@ package solo.egorov.file_indexer.app.command;
 
 import org.apache.commons.lang3.StringUtils;
 import solo.egorov.file_indexer.app.ActionResult;
-import solo.egorov.file_indexer.app.ApplicationContext;
-import solo.egorov.file_indexer.app.ApplicationException;
-import solo.egorov.file_indexer.app.configuration.ApplicationConfiguration;
-import solo.egorov.file_indexer.app.file.FileTraveler;
-import solo.egorov.file_indexer.core.default_impl.DefaultFileIndexer;
-import solo.egorov.file_indexer.core.FileIndexer;
-import solo.egorov.file_indexer.core.FileIndexerConfiguration;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -16,14 +9,14 @@ import java.util.Map;
 public class ApplicationCommandResolver
 {
     private final ErrorCommand ERROR = new ErrorCommand();
-    private final Map<String, AbstractCommand> AVAILABLE_COMMANDS;
+    private final Map<String, AbstractCommand> AVAILABLE_COMMANDS = new LinkedHashMap<>();
 
     public ApplicationCommandResolver()
     {
-        AVAILABLE_COMMANDS = new LinkedHashMap<>();
         AVAILABLE_COMMANDS.put("cd", new ChangeDirectoryCommand());
         AVAILABLE_COMMANDS.put("dir", new ListDirectoryCommand());
         AVAILABLE_COMMANDS.put("index", new IndexCommand());
+        AVAILABLE_COMMANDS.put("delete", new DeleteCommand());
         AVAILABLE_COMMANDS.put("search", new SearchCommand());
         AVAILABLE_COMMANDS.put("exit", new ExitCommand());
 
@@ -31,42 +24,45 @@ public class ApplicationCommandResolver
         for (Map.Entry<String, AbstractCommand> entry : AVAILABLE_COMMANDS.entrySet())
         {
             info.append(entry.getValue().getInfo());
+            info.append('\n');
         }
-        AVAILABLE_COMMANDS.put("info", new InfoCommand(info.toString()));
+        AbstractCommand infoCommand = new InfoCommand(info.toString());
+        AVAILABLE_COMMANDS.put("info", infoCommand);
+        AVAILABLE_COMMANDS.put("help", infoCommand);
     }
 
-    public ResolvedApplicationCommand resolve(String command)
+    public ApplicationCommandContainer resolve(String commandLine)
     {
-        command = StringUtils.trim(command);
+        commandLine = StringUtils.trim(commandLine);
 
-        if (StringUtils.isEmpty(command))
+        if (StringUtils.isEmpty(commandLine))
         {
             return error("Empty arguments");
         }
 
-        String commandName = StringUtils.trim(StringUtils.substringBefore(command, StringUtils.SPACE)); //TODO
-        String commandArgs = command.contains(StringUtils.SPACE)
-            ? StringUtils.trim(StringUtils.substringAfter(command, StringUtils.SPACE))
+        String commandName = StringUtils.trim(StringUtils.substringBefore(commandLine, StringUtils.SPACE));
+        String commandArgs = commandLine.contains(StringUtils.SPACE)
+            ? StringUtils.trim(StringUtils.substringAfter(commandLine, StringUtils.SPACE))
             : StringUtils.EMPTY;
 
-        AbstractCommand resolvedCommand = AVAILABLE_COMMANDS.get(commandName);
-        if (resolvedCommand == null)
+        AbstractCommand command = AVAILABLE_COMMANDS.get(commandName);
+        if (command == null)
         {
             return error("Unknown command");
         }
 
-        Map<String, String> parsedArgs = resolvedCommand.parseArguments(commandArgs);
-        ActionResult validationResult = resolvedCommand.validateArguments(parsedArgs);
+        Map<String, String> parsedArgs = command.parseArguments(commandArgs);
+        ActionResult validationResult = command.validateArguments(parsedArgs);
         if (!validationResult.isSuccess())
         {
             return error("Wrong arguments: " + validationResult.getMessage());
         }
 
-        return ResolvedApplicationCommand.withArgs(resolvedCommand, parsedArgs);
+        return new ApplicationCommandContainer(command, parsedArgs);
     }
 
-    private ResolvedApplicationCommand error(String message)
+    private ApplicationCommandContainer error(String message)
     {
-        return ResolvedApplicationCommand.withArgs(ERROR, ERROR.parseArguments(message));
+        return new ApplicationCommandContainer(ERROR, ERROR.parseArguments(message));
     }
 }

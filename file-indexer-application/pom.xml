@@ -23,11 +23,6 @@
             <artifactId>file-indexer-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>solo.egorov.file-indexer</groupId>
-            <artifactId>file-indexer-lucene-impl</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <!-- Logging -->
         <dependency>

@@ -221,14 +221,19 @@ public class InMemoryStorage implements IndexStorage
 
                 if (existingDocument == null)
                 {
-                    Document newDocument = new Document(document.getUri());
-                    IndexedText dataIndex = new IndexedText().addToken(
-                        new Token(storageQuery.getToken(), document.getDataIndex().getToken(matchingKey).getPositions())
+                    documentsMapping.put(
+                        document.getId(),
+                        new Document(document.getUri())
+                            .setId(document.getId())
+                            .setDataIndex(
+                                new IndexedText().addToken(
+                                    new Token(
+                                        storageQuery.getToken(),
+                                        document.getDataIndex().getToken(matchingKey).getPositions()
+                                    )
+                                )
+                            )
                     );
-                    document.setDataIndex(dataIndex);
-                    document.setId(document.getId());
-
-                    documentsMapping.put(document.getId(), newDocument);
                 }
                 else
                 {

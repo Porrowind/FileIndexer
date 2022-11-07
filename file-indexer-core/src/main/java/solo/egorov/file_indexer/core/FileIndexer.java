@@ -1,6 +1,7 @@
 package solo.egorov.file_indexer.core;
 
 import solo.egorov.file_indexer.core.query.QueryProcessor;
+import solo.egorov.file_indexer.core.storage.IndexStorage;
 
 import java.util.List;
 
@@ -49,4 +50,6 @@ public interface FileIndexer
      * @return List of {@link Document} containing the search text
      */
     List<Document> search(FileIndexerQuery query, QueryProcessor queryProcessor);
+
+    void cleanup();
 }

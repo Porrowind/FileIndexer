@@ -6,7 +6,6 @@ import org.apache.commons.io.FilenameUtils;
  * Query to search documents in storage
  * For wildcard queries:
  *   - Use * for a sequence of symbols
- *   - Use ? for a single symbol
  */
 public class IndexStorageQuery
 {
@@ -27,7 +26,7 @@ public class IndexStorageQuery
 
     public boolean isWildcard()
     {
-        return token.contains("*") || token.contains("?");
+        return token.contains("*");
     }
 
     public boolean matches(String s)

@@ -11,12 +11,12 @@ class ExitCommand extends AbstractCommand
     public ActionResult execute(ApplicationContext context, Map<String, String> args)
     {
         context.getFileIndexer().stop();
-        return ActionResult.success();
+        return ActionResult.exit();
     }
 
     @Override
-    public boolean isExitCommand()
+    public String getInfo()
     {
-        return true;
+        return "exit - Finish all running processes and exit";
     }
 }

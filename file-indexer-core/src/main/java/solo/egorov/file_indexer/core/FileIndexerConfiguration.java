@@ -18,7 +18,7 @@ import java.nio.charset.Charset;
 public class FileIndexerConfiguration
 {
     private static final int DEFAULT_WORKER_THREADS_COUNT = 4;
-    private static final int DEFAULT_MIN_TOKEN_LENGTH = 2;
+    private static final int DEFAULT_MIN_TOKEN_LENGTH = 3;
     private static final int DEFAULT_MAX_TOKEN_LENGTH = 128;
     private static final long DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024;
     private static final boolean DEFAULT_PROCESS_HIDDEN_FILES = false;

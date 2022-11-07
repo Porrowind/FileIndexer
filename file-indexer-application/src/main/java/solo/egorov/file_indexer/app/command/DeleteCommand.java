@@ -10,11 +10,8 @@ import solo.egorov.file_indexer.core.FileIndexerOptions;
 import java.io.File;
 import java.util.Map;
 
-class IndexCommand extends AbstractCommand
+class DeleteCommand extends AbstractCommand
 {
-    private static final String RECURSIVE = "r";
-    private static final String RECURSIVE_DEPTH = "d";
-
     @Override
     public ActionResult execute(ApplicationContext context, Map<String, String> args)
     {
@@ -35,18 +32,7 @@ class IndexCommand extends AbstractCommand
         FileIndexerOptions indexerOptions = new FileIndexerOptions()
             .setPath(f.getAbsolutePath());
 
-        if (args.containsKey(RECURSIVE))
-        {
-            indexerOptions.setRecursiveIndex(true);
-        }
-
-        Integer recursiveIndexDepth = parseInteger(args.get(RECURSIVE_DEPTH));
-        if (recursiveIndexDepth != null)
-        {
-            indexerOptions.setRecursiveIndexDepth(recursiveIndexDepth);
-        }
-
-        fileIndexer.index(indexerOptions);
+        fileIndexer.delete(indexerOptions);
 
         return ActionResult.success();
     }
@@ -60,9 +46,7 @@ class IndexCommand extends AbstractCommand
     @Override
     public String getInfo()
     {
-        return "index - Add files to the index" +
-            "\n\t-r - Index folders recursively; default is false" +
-            "\n\t-d=<int> - Max recursive index depth; default is 10" +
-            "\n\t<path> - Absolute or relative path to add to index; can be file or directory; leave empty if you want to index current path";
+        return "delete - Remove files from the index" +
+            "\n\t<path> - Absolute or relative path to remove from index; can be file or directory; leave empty if you want to index current path";
     }
 }

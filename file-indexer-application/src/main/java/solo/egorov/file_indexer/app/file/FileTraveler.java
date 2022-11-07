@@ -1,7 +1,6 @@
 package solo.egorov.file_indexer.app.file;
 
 import org.apache.commons.lang3.StringUtils;
-import solo.egorov.file_indexer.app.configuration.ApplicationConfiguration;
 
 import java.io.IOException;
 import java.nio.file.Files;

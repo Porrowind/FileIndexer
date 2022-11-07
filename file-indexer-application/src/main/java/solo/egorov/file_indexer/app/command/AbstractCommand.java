@@ -1,14 +1,19 @@
 package solo.egorov.file_indexer.app.command;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import solo.egorov.file_indexer.app.ActionResult;
+import solo.egorov.file_indexer.app.ApplicationException;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
 abstract class AbstractCommand implements ApplicationCommand
 {
-    //TODO: use stream, "values"
+    static final String TARGET = "TARGET";
+
     Map<String, String> parseArguments(String args)
     {
         Map<String, String> parsedArgs = new HashMap<>();
@@ -18,19 +23,96 @@ abstract class AbstractCommand implements ApplicationCommand
             return parsedArgs;
         }
 
-        String[] splittedArgs = args.split(" ");
-        for (String arg : splittedArgs)
+        try
         {
-            String[] argPair = arg.split("=");
+            StringReader sr = new StringReader(args);
 
-            if (argPair.length == 1)
+            StringBuilder currentKey = new StringBuilder();
+            StringBuilder currentValue = new StringBuilder();
+
+            boolean processingKey = false;
+
+            int ch;
+            while ((ch = sr.read()) != -1)
             {
-                parsedArgs.put(argPair[0], null);
+                if (ch == '-')
+                {
+                    if (StringUtils.isNotBlank(currentKey))
+                    {
+                        if (StringUtils.isNotBlank(currentValue))
+                        {
+                            parsedArgs.put(currentKey.toString(), currentValue.toString());
+                        }
+                        else
+                        {
+                            parsedArgs.put(currentKey.toString(), null);
+                        }
+                    }
+
+                    processingKey = true;
+
+                    currentKey = new StringBuilder();
+                    currentValue = new StringBuilder();
+                }
+                else if (ch == '=')
+                {
+                    processingKey = false;
+                }
+                else if (ch == ' ')
+                {
+                    if (StringUtils.isNotBlank(currentKey))
+                    {
+                        if (StringUtils.isNotBlank(currentValue))
+                        {
+                            parsedArgs.put(currentKey.toString(), currentValue.toString());
+                        }
+                        else
+                        {
+                            parsedArgs.put(currentKey.toString(), null);
+                        }
+
+                        processingKey = false;
+
+                        currentKey = new StringBuilder();
+                        currentValue = new StringBuilder();
+                    }
+                    else
+                    {
+                        currentValue.append((char)ch);
+                    }
+                }
+                else
+                {
+                    if (processingKey)
+                    {
+                        currentKey.append((char)ch);
+                    }
+                    else
+                    {
+                        currentValue.append((char)ch);
+                    }
+                }
             }
-            else if (argPair.length == 2)
+
+            if (StringUtils.isNotBlank(currentKey))
             {
-                parsedArgs.put(argPair[0], argPair[1]);
+                if (StringUtils.isNotBlank(currentValue))
+                {
+                    parsedArgs.put(currentKey.toString(), currentValue.toString());
+                }
+                else
+                {
+                    parsedArgs.put(currentKey.toString(), null);
+                }
             }
+            else if (StringUtils.isNotBlank(currentValue))
+            {
+                parsedArgs.put(TARGET, currentValue.toString());
+            }
+        }
+        catch (IOException ioe)
+        {
+            throw new ApplicationException("Failed to parse command parameters");
         }
 
         return parsedArgs;
@@ -39,5 +121,34 @@ abstract class AbstractCommand implements ApplicationCommand
     ActionResult validateArguments(Map<String, String> args)
     {
         return ActionResult.success();
+    }
+
+    Boolean parseBoolean(String value)
+    {
+        return BooleanUtils.toBooleanObject(StringUtils.trim(value));
+    }
+
+    Integer parseInteger(String value)
+    {
+        try
+        {
+            return Integer.parseInt(StringUtils.trim(value));
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
+    }
+
+    Long parseLong(String value)
+    {
+        try
+        {
+            return Long.parseLong(StringUtils.trim(value));
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
     }
 }
