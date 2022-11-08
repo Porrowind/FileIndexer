@@ -19,6 +19,6 @@ public class StopWordsTokenFilter implements TokenFilter
     @Override
     public boolean isAccepted(String token)
     {
-        return stopWords.contains(token);
+        return !stopWords.contains(token);
     }
 }

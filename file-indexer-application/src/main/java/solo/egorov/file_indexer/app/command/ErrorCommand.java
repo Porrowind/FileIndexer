@@ -9,7 +9,7 @@ import java.util.Map;
 class ErrorCommand extends AbstractCommand
 {
     @Override
-    public ActionResult execute(ApplicationContext context, Map<String, String> args)
+    ActionResult executeSafe(ApplicationContext context, Map<String, String> args)
     {
         if (args != null && StringUtils.isNotBlank(args.get(TARGET)))
         {

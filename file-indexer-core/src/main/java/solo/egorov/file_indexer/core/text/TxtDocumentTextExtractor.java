@@ -1,6 +1,8 @@
 package solo.egorov.file_indexer.core.text;
 
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,8 +12,10 @@ import java.io.InputStream;
  */
 public class TxtDocumentTextExtractor implements TextExtractor
 {
+    private static final Logger LOG = LoggerFactory.getLogger(TxtDocumentTextExtractor.class);
+
     @Override
-    public String extract(InputStream rawStream)
+    public String extract(InputStream rawStream) throws TextExtractorException
     {
         try
         {
@@ -19,7 +23,7 @@ public class TxtDocumentTextExtractor implements TextExtractor
         }
         catch (IOException ioe)
         {
-            return null;
+            throw new TextExtractorException("Failed to extract text from the Text file");
         }
         finally
         {
@@ -29,7 +33,10 @@ public class TxtDocumentTextExtractor implements TextExtractor
                 {
                     rawStream.close();
                 }
-                catch (Exception e) {}
+                catch (Exception e)
+                {
+                    LOG.error("Failed to close Text file input stream", e);
+                }
             }
         }
     }

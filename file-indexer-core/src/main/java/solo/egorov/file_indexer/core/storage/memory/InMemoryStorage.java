@@ -1,10 +1,13 @@
 package solo.egorov.file_indexer.core.storage.memory;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import solo.egorov.file_indexer.core.Document;
 import solo.egorov.file_indexer.core.IndexedText;
 import solo.egorov.file_indexer.core.Token;
 import solo.egorov.file_indexer.core.storage.IndexStorage;
+import solo.egorov.file_indexer.core.storage.IndexStorageException;
 import solo.egorov.file_indexer.core.storage.IndexStorageQuery;
 
 import java.util.ArrayList;
@@ -24,6 +27,8 @@ import java.util.stream.Collectors;
  */
 public class InMemoryStorage implements IndexStorage
 {
+    private static final Logger LOG = LoggerFactory.getLogger(InMemoryStorage.class);
+
     private static final int MAX_WILDCARD_KEY_MATCHES = 10;
 
     private final ReadWriteLock DOCUMENT_RECORDS_LOCK = new ReentrantReadWriteLock();
@@ -37,122 +42,151 @@ public class InMemoryStorage implements IndexStorage
     private final Map<String, TokenContainer> indexContainer = new HashMap<>();
 
     @Override
-    public void add(Document document)
+    public void add(Document document) throws IndexStorageException
     {
-        if (!validateNewDocument(document))
+        try
         {
-            return;
-        }
-
-        DocumentRecord newDocumentRecord = new DocumentRecord(
-            document.getUri(), documentIdGenerator.getNextId(), document.getHash(), DocumentState.NEW
-        );
-
-        DocumentRecord existingDocumentRecord;
-
-        DOCUMENT_RECORDS_LOCK.writeLock().lock();
-        existingDocumentRecord = activeDocumentRecordsByUri.get(newDocumentRecord.getUri());
-
-        if (existingDocumentRecord != null)
-        {
-            existingDocumentRecord.setDocumentState(DocumentState.DELETED);
-            activeDocumentRecordsById.remove(existingDocumentRecord.getDocumentId());
-        }
-
-        activeDocumentRecordsById.put(newDocumentRecord.getDocumentId(), newDocumentRecord);
-        activeDocumentRecordsByUri.put(newDocumentRecord.getUri(), newDocumentRecord);
-        DOCUMENT_RECORDS_LOCK.writeLock().unlock();
-
-        if (existingDocumentRecord != null)
-        {
-            CLEANUP_LOCK.writeLock().lock();
-            deletedDocumentRecords.add(existingDocumentRecord);
-            CLEANUP_LOCK.writeLock().unlock();
-        }
-
-        for (Token token : document.getDataIndex().getAllTokens())
-        {
-            INDEX_RECORDS_LOCK.readLock().lock();
-            TokenContainer tokenContainer = indexContainer.get(token.getData());
-            INDEX_RECORDS_LOCK.readLock().unlock();
-
-            if (tokenContainer == null)
+            if (!validateNewDocument(document))
             {
-                INDEX_RECORDS_LOCK.writeLock().lock();
-                tokenContainer = indexContainer.get(token.getData());
+                return;
+            }
+
+            DocumentRecord newDocumentRecord = new DocumentRecord(
+                document.getUri(), documentIdGenerator.getNextId(), document.getHash(), DocumentState.NEW
+            );
+
+            DocumentRecord existingDocumentRecord;
+
+            DOCUMENT_RECORDS_LOCK.writeLock().lock();
+            existingDocumentRecord = activeDocumentRecordsByUri.get(newDocumentRecord.getUri());
+
+            if (existingDocumentRecord != null)
+            {
+                existingDocumentRecord.setDocumentState(DocumentState.DELETED);
+                activeDocumentRecordsById.remove(existingDocumentRecord.getDocumentId());
+            }
+
+            activeDocumentRecordsById.put(newDocumentRecord.getDocumentId(), newDocumentRecord);
+            activeDocumentRecordsByUri.put(newDocumentRecord.getUri(), newDocumentRecord);
+            DOCUMENT_RECORDS_LOCK.writeLock().unlock();
+
+            if (existingDocumentRecord != null)
+            {
+                CLEANUP_LOCK.writeLock().lock();
+                deletedDocumentRecords.add(existingDocumentRecord);
+                CLEANUP_LOCK.writeLock().unlock();
+            }
+
+            for (Token token : document.getDataIndex().getAllTokens())
+            {
+                INDEX_RECORDS_LOCK.readLock().lock();
+                TokenContainer tokenContainer = indexContainer.get(token.getData());
+                INDEX_RECORDS_LOCK.readLock().unlock();
 
                 if (tokenContainer == null)
                 {
-                    tokenContainer = new TokenContainer();
-                    indexContainer.put(token.getData(), tokenContainer);
+                    INDEX_RECORDS_LOCK.writeLock().lock();
+                    tokenContainer = indexContainer.get(token.getData());
+
+                    if (tokenContainer == null)
+                    {
+                        tokenContainer = new TokenContainer();
+                        indexContainer.put(token.getData(), tokenContainer);
+                    }
+                    INDEX_RECORDS_LOCK.writeLock().unlock();
                 }
-                INDEX_RECORDS_LOCK.writeLock().unlock();
+
+                tokenContainer.add(new IndexRecord(newDocumentRecord.getDocumentId(), token.getPositions()));
             }
 
-            tokenContainer.add(new IndexRecord(newDocumentRecord.getDocumentId(), token.getPositions()));
+            DOCUMENT_RECORDS_LOCK.writeLock().lock();
+            newDocumentRecord.setDocumentState(DocumentState.ACTIVE);
+            DOCUMENT_RECORDS_LOCK.writeLock().unlock();
         }
-
-        DOCUMENT_RECORDS_LOCK.writeLock().lock();
-        newDocumentRecord.setDocumentState(DocumentState.ACTIVE);
-        DOCUMENT_RECORDS_LOCK.writeLock().unlock();
-    }
-
-    @Override
-    public byte[] getDocumentHash(String uri)
-    {
-        byte[] result = null;
-
-        DOCUMENT_RECORDS_LOCK.readLock().lock();
-        DocumentRecord documentRecord = activeDocumentRecordsByUri.get(uri);
-
-        if (documentRecord != null && documentRecord.getHash() != null)
+        catch (Exception e)
         {
-            result = Arrays.copyOf(documentRecord.getHash(), documentRecord.getHash().length);
+            throw new IndexStorageException("Failed to add document to the storage", e);
         }
-        DOCUMENT_RECORDS_LOCK.readLock().unlock();
-
-        return result;
     }
 
     @Override
-    public List<Document> get(IndexStorageQuery storageQuery)
+    public byte[] getDocumentHash(String uri) throws IndexStorageException
     {
-        return storageQuery.isWildcard()
-            ? processWildcardQuery(storageQuery)
-            : processSimpleQuery(storageQuery);
-    }
-
-    @Override
-    public void delete(String uri)
-    {
-        DOCUMENT_RECORDS_LOCK.writeLock().lock();
-        DocumentRecord existingDocumentRecord = activeDocumentRecordsByUri.get(uri);
-
-        if (existingDocumentRecord != null)
+        try
         {
-            existingDocumentRecord.setDocumentState(DocumentState.DELETED);
-            activeDocumentRecordsById.remove(existingDocumentRecord.getDocumentId());
-            deletedDocumentRecords.add(existingDocumentRecord);
+            byte[] result = null;
+
+            DOCUMENT_RECORDS_LOCK.readLock().lock();
+            DocumentRecord documentRecord = activeDocumentRecordsByUri.get(uri);
+
+            if (documentRecord != null && documentRecord.getHash() != null)
+            {
+                result = Arrays.copyOf(documentRecord.getHash(), documentRecord.getHash().length);
+            }
+            DOCUMENT_RECORDS_LOCK.readLock().unlock();
+
+            return result;
         }
-        DOCUMENT_RECORDS_LOCK.writeLock().unlock();
+        catch (Exception e)
+        {
+            throw new IndexStorageException("Failed to get document hash from the storage", e);
+        }
     }
 
     @Override
-    public void cleanup()
+    public List<Document> get(IndexStorageQuery storageQuery) throws IndexStorageException
     {
-        List<DocumentRecord> documentRecordsToCleanup;
+        try
+        {
+            return storageQuery.isWildcard()
+                ? processWildcardQuery(storageQuery)
+                : processSimpleQuery(storageQuery);
+        }
+        catch (Exception e)
+        {
+            throw new IndexStorageException("Failed to get documents from the storage", e);
+        }
+    }
 
-        CLEANUP_LOCK.writeLock().lock();
-        documentRecordsToCleanup = new ArrayList<>(deletedDocumentRecords);
-        deletedDocumentRecords.clear();
-        CLEANUP_LOCK.writeLock().unlock();
+    @Override
+    public void delete(String uri) throws IndexStorageException
+    {
+        try
+        {
+            DOCUMENT_RECORDS_LOCK.writeLock().lock();
+            DocumentRecord existingDocumentRecord = activeDocumentRecordsByUri.get(uri);
 
-        Set<Long> documentIdsToCleanup = documentRecordsToCleanup.stream()
-            .map(DocumentRecord::getDocumentId)
-            .collect(Collectors.toSet());
+            if (existingDocumentRecord != null)
+            {
+                existingDocumentRecord.setDocumentState(DocumentState.DELETED);
+                activeDocumentRecordsById.remove(existingDocumentRecord.getDocumentId());
+                deletedDocumentRecords.add(existingDocumentRecord);
+            }
+            DOCUMENT_RECORDS_LOCK.writeLock().unlock();
+        }
+        catch (Exception e)
+        {
+            throw new IndexStorageException("Failed to delete document from the storage", e);
+        }
+    }
+
+    @Override
+    public void cleanup() throws IndexStorageException
+    {
+
+        List<DocumentRecord> documentRecordsToCleanup = null;
 
         try
         {
+            CLEANUP_LOCK.writeLock().lock();
+            documentRecordsToCleanup = new ArrayList<>(deletedDocumentRecords);
+            deletedDocumentRecords.clear();
+            CLEANUP_LOCK.writeLock().unlock();
+
+            Set<Long> documentIdsToCleanup = documentRecordsToCleanup.stream()
+                .map(DocumentRecord::getDocumentId)
+                .collect(Collectors.toSet());
+
             Set<String> keys = getKeys();
 
             for (String key : keys)
@@ -177,11 +211,14 @@ public class InMemoryStorage implements IndexStorage
         }
         catch (Exception e)
         {
-            CLEANUP_LOCK.writeLock().lock();
-            deletedDocumentRecords.addAll(documentRecordsToCleanup);
-            CLEANUP_LOCK.writeLock().unlock();
+            if (documentRecordsToCleanup != null)
+            {
+                CLEANUP_LOCK.writeLock().lock();
+                deletedDocumentRecords.addAll(documentRecordsToCleanup);
+                CLEANUP_LOCK.writeLock().unlock();
+            }
 
-            throw e;
+            throw new IndexStorageException("Failed to cleanup the storage", e);
         }
     }
 

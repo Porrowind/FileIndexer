@@ -6,13 +6,11 @@ import solo.egorov.file_indexer.core.Token;
 import solo.egorov.file_indexer.core.tokenizer.filter.character.CharacterFilter;
 import solo.egorov.file_indexer.core.tokenizer.filter.token.TokenFilter;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 
-//TODO: TARGET -> IndexWriter
 public class DefaultStreamTokenizer extends AbstractTokenizer<InputStream> implements StreamTokenizer
 {
     private static final int DEFAULT_CHUNK_SIZE = 4 * 1024;
@@ -49,13 +47,12 @@ public class DefaultStreamTokenizer extends AbstractTokenizer<InputStream> imple
                     if (getCharacterFilter().isSeparator(ch))
                     {
                         String text = normalizeText(currentToken.toString());
-                        if (StringUtils.isNotEmpty(text))
+                        if (StringUtils.isNotEmpty(text) && getTokenFilter().isAccepted(text))
                         {
-                            indexedText.addToken(new Token(text, currentPosition));
+                            indexedText.addToken(new Token(text, currentPosition++));
                         }
 
                         currentToken.setLength(0);
-                        currentPosition++;
                     }
                     else
                     {
@@ -67,9 +64,9 @@ public class DefaultStreamTokenizer extends AbstractTokenizer<InputStream> imple
                 }
             }
         }
-        catch (IOException ioe)
+        catch (Exception e)
         {
-            throw new TokenizerException("Failed to read stream to tokens", ioe);
+            throw new TokenizerException("Failed to tokenize stream", e);
         }
 
         return indexedText;

@@ -2,7 +2,11 @@ package solo.egorov.file_indexer.app.command;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import solo.egorov.file_indexer.app.ActionResult;
+import solo.egorov.file_indexer.app.ApplicationContext;
 import solo.egorov.file_indexer.app.ApplicationException;
 
 import java.io.IOException;
@@ -12,7 +16,25 @@ import java.util.Map;
 
 abstract class AbstractCommand implements ApplicationCommand
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractCommand.class);
+
     static final String TARGET = "TARGET";
+
+    @Override
+    public ActionResult execute(ApplicationContext context, Map<String, String> args)
+    {
+        try
+        {
+            return executeSafe(context, args);
+        }
+        catch (Exception e)
+        {
+            LOGGER.error("Exception occurred: " + e.getMessage(), e);
+            return ActionResult.failure("Exception occurred: " + e.getMessage());
+        }
+    }
+
+    abstract ActionResult executeSafe(ApplicationContext context, Map<String, String> args);
 
     Map<String, String> parseArguments(String args)
     {

@@ -2,6 +2,8 @@ package solo.egorov.file_indexer.core.text;
 
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,8 +14,10 @@ import java.util.List;
  */
 public class DocxDocumentTextExtractor implements TextExtractor
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DocxDocumentTextExtractor.class);
+
     @Override
-    public String extract(InputStream rawStream)
+    public String extract(InputStream rawStream) throws TextExtractorException
     {
         try
         {
@@ -30,7 +34,7 @@ public class DocxDocumentTextExtractor implements TextExtractor
         }
         catch (IOException ioe)
         {
-            return null;
+            throw new TextExtractorException("Failed to extract text from the Docx file");
         }
         finally
         {
@@ -40,7 +44,10 @@ public class DocxDocumentTextExtractor implements TextExtractor
                 {
                     rawStream.close();
                 }
-                catch (Exception e) {}
+                catch (Exception e)
+                {
+                    LOG.error("Failed to close Docx file input stream", e);
+                }
             }
         }
     }

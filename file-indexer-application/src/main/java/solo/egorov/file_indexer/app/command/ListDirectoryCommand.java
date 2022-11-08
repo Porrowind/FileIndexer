@@ -11,7 +11,7 @@ import java.util.Map;
 public class ListDirectoryCommand extends AbstractCommand
 {
     @Override
-    public ActionResult execute(ApplicationContext context, Map<String, String> args) throws ApplicationException
+    ActionResult executeSafe(ApplicationContext context, Map<String, String> args) throws ApplicationException
     {
         try
         {

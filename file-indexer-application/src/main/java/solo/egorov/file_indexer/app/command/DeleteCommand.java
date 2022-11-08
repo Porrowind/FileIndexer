@@ -13,7 +13,7 @@ import java.util.Map;
 class DeleteCommand extends AbstractCommand
 {
     @Override
-    public ActionResult execute(ApplicationContext context, Map<String, String> args)
+    ActionResult executeSafe(ApplicationContext context, Map<String, String> args)
     {
         FileIndexer fileIndexer = context.getFileIndexer();
         FileTraveler fileTraveler = context.getFileTraveler();

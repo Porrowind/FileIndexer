@@ -15,7 +15,7 @@ class SearchCommand extends AbstractCommand
     private static final String STRICT = "s";
 
     @Override
-    public ActionResult execute(ApplicationContext context, Map<String, String> args)
+    ActionResult executeSafe(ApplicationContext context, Map<String, String> args)
     {
         FileIndexer fileIndexer = context.getFileIndexer();
 

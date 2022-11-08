@@ -30,7 +30,7 @@ public class FileSizeFilter implements FileFilter
         {
             File file = new File(path);
 
-            return !(file.exists() && Files.size(Paths.get(path)) > maxFileSize);
+            return !(file.exists() && Files.size(Paths.get(path)) >= maxFileSize);
         }
         catch (IOException ioe)
         {

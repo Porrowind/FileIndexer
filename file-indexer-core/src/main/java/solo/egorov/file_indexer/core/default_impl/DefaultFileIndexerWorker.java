@@ -53,59 +53,83 @@ class DefaultFileIndexerWorker implements Runnable
     {
         while (!isStopped())
         {
-            DefaultFileIndexerWorkerTask nextTask = defaultFileIndexerQueue.getNextTask();
+            try
+            {
+                DefaultFileIndexerWorkerTask nextTask = defaultFileIndexerQueue.getNextTask();
 
-            if (nextTask != null && lock.lock(nextTask.getPath()))
-            {
-                if (nextTask.isDeleteTask())
+                if (nextTask != null && lock.lock(nextTask.getPath()))
                 {
-                    processDelete(nextTask.getPath());
+                    if (nextTask.isDeleteTask())
+                    {
+                        processDelete(nextTask.getPath());
+                    }
+                    else if (nextTask.isAddTask())
+                    {
+                        processAdd(nextTask.getPath());
+                    }
+                    lock.unlock(nextTask.getPath());
                 }
-                else if (nextTask.isAddTask())
-                {
-                    processAdd(nextTask.getPath());
-                }
-                lock.unlock(nextTask.getPath());
             }
-            else
+            catch (Exception e)
             {
-                try
-                {
-                    Thread.sleep(50);
-                }
-                catch (InterruptedException ie) {}
+                LOG.error("[IndexWorker]: " + e.getMessage(), e);
             }
         }
     }
 
     private void processAdd(String path)
     {
-        LOG.debug("Started indexing: " + path);
-
-        File file = new File(path);
-        if (!file.exists() || !file.isFile())
+        try
         {
-            if (indexWatcherRegistry != null)
+            LOG.debug("[IndexWorker] Started indexing the path: " + path);
+
+            File file = new File(path);
+            if (!file.exists() || !file.isFile())
             {
-                indexWatcherRegistry.deleteFileRecord(path);
+                if (indexWatcherRegistry != null)
+                {
+                    indexWatcherRegistry.deleteFileRecord(path);
+                }
+
+                return;
             }
 
-            return;
-        }
+            InputStream fileStream = fileReader.readFile(path);
 
-        InputStream fileStream = fileReader.readFile(path);
+            TextExtractor textExtractor = textExtractorFactory.getForFileExtensionOrDefault(
+                FilenameUtils.getExtension(path)
+            );
 
-        TextExtractor textExtractor = textExtractorFactory.getForFileExtensionOrDefault(
-            FilenameUtils.getExtension(path)
-        );
+            String fileText = textExtractor.extract(fileStream);
 
-        String fileText = textExtractor.extract(fileStream);
+            byte[] textHash = hashCalculator.calculateHash(fileText);
+            byte[] existingHash = indexStorage.getDocumentHash(path);
 
-        byte[] textHash = hashCalculator.calculateHash(fileText);
-        byte[] existingHash = indexStorage.getDocumentHash(path);
+            if (textHash != null && existingHash != null && Arrays.equals(textHash, existingHash))
+            {
+                if (indexWatcherRegistry != null)
+                {
+                    indexWatcherRegistry.setFileRecord(
+                        path,
+                        new IndexWatcherFileRecord(
+                            path,
+                            IndexWatcherRegistryState.Active,
+                            file.lastModified()
+                        )
+                    );
+                }
 
-        if (textHash != null && existingHash != null && Arrays.equals(textHash, existingHash))
-        {
+                return;
+            }
+
+            IndexedText indexedText = stringTokenizer.tokenize(fileText);
+
+            indexStorage.add(
+                new Document(path)
+                    .setDataIndex(indexedText)
+                    .setHash(textHash)
+            );
+
             if (indexWatcherRegistry != null)
             {
                 indexWatcherRegistry.setFileRecord(
@@ -118,38 +142,32 @@ class DefaultFileIndexerWorker implements Runnable
                 );
             }
 
-            return;
+            LOG.debug("[IndexWorker] Finished indexing the path: " + path);
         }
-
-        IndexedText indexedText = stringTokenizer.tokenize(fileText);
-
-        indexStorage.add(
-            new Document(path)
-                .setDataIndex(indexedText)
-                .setHash(textHash)
-        );
-
-        if (indexWatcherRegistry != null)
+        catch (Exception e)
         {
-            indexWatcherRegistry.setFileRecord(
-                path,
-                new IndexWatcherFileRecord(
-                    path,
-                    IndexWatcherRegistryState.Active,
-                    file.lastModified()
-                )
-            );
+            LOG.error("[IndexWorker] Failed to add file to index: " + path, e);
         }
     }
 
     private void processDelete(String path)
     {
-        LOG.debug("Deleting from index: " + path);
-        indexStorage.delete(path);
-
-        if (indexWatcherRegistry != null)
+        try
         {
-            indexWatcherRegistry.deleteFileRecord(path);
+            LOG.debug("[IndexWorker] Started deleting the path from index: " + path);
+
+            indexStorage.delete(path);
+
+            if (indexWatcherRegistry != null)
+            {
+                indexWatcherRegistry.deleteFileRecord(path);
+            }
+
+            LOG.debug("[IndexWorker] Finished deleting the path from index: " + path);
+        }
+        catch (Exception e)
+        {
+            LOG.error("[IndexWorker] Failed to remove file from index: " + path, e);
         }
     }
 

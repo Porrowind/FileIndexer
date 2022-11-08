@@ -17,6 +17,7 @@ public class ApplicationCommandResolver
         AVAILABLE_COMMANDS.put("dir", new ListDirectoryCommand());
         AVAILABLE_COMMANDS.put("index", new IndexCommand());
         AVAILABLE_COMMANDS.put("delete", new DeleteCommand());
+        AVAILABLE_COMMANDS.put("cleanup", new CleanupCommand());
         AVAILABLE_COMMANDS.put("search", new SearchCommand());
         AVAILABLE_COMMANDS.put("exit", new ExitCommand());
 

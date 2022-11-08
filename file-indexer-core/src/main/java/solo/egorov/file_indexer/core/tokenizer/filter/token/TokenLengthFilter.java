@@ -23,7 +23,7 @@ public class TokenLengthFilter implements TokenFilter
     {
         int tokenLength = StringUtils.length(StringUtils.trim(token));
 
-        return (minLengthAccepted < 0 || tokenLength > minLengthAccepted)
-            && (maxLengthAccepted < 0 || tokenLength <= maxLengthAccepted);
+        return (minLengthAccepted < 0 || tokenLength >= minLengthAccepted)
+            && (maxLengthAccepted < 0 || tokenLength < maxLengthAccepted);
     }
 }

@@ -13,5 +13,5 @@ public interface TextExtractor
      * @param rawStream {@link InputStream} with a file content
      * @return String representation of a file
      */
-    String extract(InputStream rawStream);
+    String extract(InputStream rawStream) throws TextExtractorException;
 }

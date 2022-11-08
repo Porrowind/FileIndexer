@@ -10,7 +10,7 @@ import java.util.Map;
 class ChangeDirectoryCommand extends AbstractCommand
 {
     @Override
-    public ActionResult execute(ApplicationContext context, Map<String, String> args)
+    ActionResult executeSafe(ApplicationContext context, Map<String, String> args)
     {
         FileTraveler fileTraveler = context.getFileTraveler();
 

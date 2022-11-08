@@ -171,103 +171,105 @@ public class DefaultFileIndexer implements FileIndexer
     }
 
     @Override
-    public void start()
+    public void start() throws FileIndexerException
     {
-        if (indexWatcher != null)
+        try
         {
-            indexWatcher.start();
-        }
+            if (indexWatcher != null)
+            {
+                indexWatcher.start();
+            }
 
-        startWorkers();
+            startWorkers();
+        }
+        catch (Exception e)
+        {
+            throw new FileIndexerException("Failed to start the index", e);
+        }
     }
 
     @Override
-    public void stop()
+    public void stop() throws FileIndexerException
     {
-        if (indexWatcher != null)
+        try
         {
-            indexWatcher.stop();
-        }
+            if (indexWatcher != null)
+            {
+                indexWatcher.stop();
+            }
 
-        stopWorkers();
+            stopWorkers();
+        }
+        catch (Exception e)
+        {
+            throw new FileIndexerException("Failed to stop the index", e);
+        }
     }
 
     @Override
-    public void index(FileIndexerOptions options)
+    public void index(FileIndexerOptions options) throws FileIndexerException
     {
+        if (options == null)
+        {
+            throw new FileIndexerException("Failed to index path: Options is null");
+        }
+
         options.setPath(StringUtils.trim(options.getPath()));
 
         if (StringUtils.isEmpty(options.getPath()))
         {
-            throw new FileIndexerException("Empty path provided");
+            throw new FileIndexerException("Failed to index path: Empty path provided");
         }
 
         File file = new File(options.getPath());
 
         if (!file.exists())
         {
-            throw new FileIndexerException("File not found: " + options.getPath());
+            throw new FileIndexerException("Failed to index path: File not found: " + options.getPath());
         }
 
-        if (file.isDirectory())
+        try
         {
-            indexDirectory(options.getPath(), options, 1);
+            if (file.isDirectory())
+            {
+                indexDirectory(options.getPath(), options, 1);
+            }
+            else
+            {
+                indexSingleFile(options.getPath());
+            }
         }
-        else
+        catch (Exception e)
         {
-            indexSingleFile(options.getPath());
+            throw new FileIndexerException("Failed to index path: " + options.getPath(), e);
         }
     }
 
-    @Override
-    public void delete(FileIndexerOptions options) //TODO Folders
+    private void indexSingleFile(String path) throws FileIndexerException
     {
-        options.setPath(StringUtils.trim(options.getPath()));
-
-        if (StringUtils.isEmpty(options.getPath()))
+        try
         {
-            throw new FileIndexerException("Empty path provided");
-        }
-
-        defaultFileIndexerQueue.addDeleteTask(options.getPath());
-    }
-
-    @Override
-    public List<Document> search(FileIndexerQuery query)
-    {
-        return search(query, this.queryProcessor);
-    }
-
-    @Override
-    public List<Document> search(FileIndexerQuery query, QueryProcessor queryProcessor)
-    {
-        return queryProcessor.process(query, indexStorage, queryTokenizer);
-    }
-
-    @Override
-    public void cleanup()
-    {
-        indexStorage.cleanup();
-    }
-
-    private void indexSingleFile(String path)
-    {
-        if (indexWatcherRegistry != null)
-        {
-            indexWatcherRegistry.setFileRecord(
-                path,
-                new IndexWatcherFileRecord(
+            if (indexWatcherRegistry != null)
+            {
+                indexWatcherRegistry.setFileRecord(
                     path,
-                    IndexWatcherRegistryState.New,
-                    -1
-                )
-            );
-        }
+                    new IndexWatcherFileRecord(
+                        path,
+                        IndexWatcherRegistryState.New,
+                        -1
+                    )
+                );
+            }
 
-        defaultFileIndexerQueue.addAddTask(path);
+            defaultFileIndexerQueue.addAddTask(path);
+        }
+        catch (Exception e)
+        {
+            throw new FileIndexerException("Failed to index file: " + path);
+        }
     }
 
-    private void indexDirectory(String sPath, FileIndexerOptions options, int currentDepth)
+    private void indexDirectory(String sPath, FileIndexerOptions options, int currentDepth) throws FileIndexerException
     {
         try
         {
@@ -290,14 +292,83 @@ public class DefaultFileIndexer implements FileIndexer
             {
                 Files.list(path)
                     .filter(Files::isDirectory)
-                    .filter(p -> !new File(p.toString()).isHidden()) //TODO
                     .map(Path::toString)
+                    .filter(p -> configuration.isProcessHiddenFiles() || !new File(p).isHidden())
                     .forEach(p -> indexDirectory(p, options, currentDepth + 1));
             }
         }
         catch (IOException ioe)
         {
-            throw new FileIndexerException("File  : " + options.getPath(), ioe);
+            throw new FileIndexerException("Failed to index directory: " + options.getPath(), ioe);
+        }
+    }
+
+    @Override
+    public void delete(FileIndexerOptions options) throws FileIndexerException
+    {
+        if (options == null)
+        {
+            throw new FileIndexerException("Failed to index path: Options is null");
+        }
+
+        options.setPath(StringUtils.trim(options.getPath()));
+
+        if (StringUtils.isEmpty(options.getPath()))
+        {
+            throw new FileIndexerException("Empty path provided");
+        }
+
+        try
+        {
+            if (indexWatcherRegistry != null)
+            {
+                indexWatcherRegistry.deleteFolderRecord(options.getPath());
+            }
+
+            File file = new File(options.getPath());
+
+            if (file.exists() && file.isDirectory())
+            {
+                Path path = Paths.get(options.getPath());
+
+                Files.list(path)
+                    .filter(Files::isRegularFile)
+                    .filter(p -> fileFilter.isAccepted(p.toString()))
+                    .forEach(filePath -> defaultFileIndexerQueue.addDeleteTask(filePath.toString()));
+            }
+            else
+            {
+                defaultFileIndexerQueue.addDeleteTask(options.getPath());
+            }
+        }
+        catch (Exception e)
+        {
+            throw new FileIndexerException("Failed to delete file from index: " + options.getPath());
+        }
+    }
+
+    @Override
+    public List<Document> search(FileIndexerQuery query) throws FileIndexerException
+    {
+        return search(query, this.queryProcessor);
+    }
+
+    @Override
+    public List<Document> search(FileIndexerQuery query, QueryProcessor queryProcessor)  throws FileIndexerException
+    {
+        return queryProcessor.process(query, indexStorage, queryTokenizer);
+    }
+
+    @Override
+    public void cleanup() throws FileIndexerException
+    {
+        try
+        {
+            indexStorage.cleanup();
+        }
+        catch (Exception e)
+        {
+            throw new FileIndexerException("Failed to cleanup the index", e);
         }
     }
 
@@ -323,19 +394,19 @@ public class DefaultFileIndexer implements FileIndexer
 
     private void stopWorkers()
     {
-        for (DefaultFileIndexerWorker defaultFileIndexerWorker : defaultFileIndexerWorkers)
-        {
-            defaultFileIndexerWorker.stop();
-        }
-
         try
         {
+            for (DefaultFileIndexerWorker defaultFileIndexerWorker : defaultFileIndexerWorkers)
+            {
+                defaultFileIndexerWorker.stop();
+            }
+
             indexWorkersService.shutdown();
             indexWorkersService.awaitTermination(1, TimeUnit.MINUTES);
         }
-        catch (InterruptedException ie)
+        catch (Exception e)
         {
-            throw new FileIndexerException("Failed to stop the index workers", ie);
+            throw new FileIndexerException("Failed to stop the index workers", e);
         }
     }
 }

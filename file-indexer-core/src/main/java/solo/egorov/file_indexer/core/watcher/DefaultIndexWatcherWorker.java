@@ -1,16 +1,19 @@
 package solo.egorov.file_indexer.core.watcher;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import solo.egorov.file_indexer.core.FileIndexer;
 import solo.egorov.file_indexer.core.FileIndexerOptions;
 import solo.egorov.file_indexer.core.file.filter.FileFilter;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
 class DefaultIndexWatcherWorker implements Runnable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultIndexWatcherWorker.class);
+
     private volatile boolean stopped = false;
 
     private final IndexWatcherConfiguration configuration;
@@ -30,9 +33,16 @@ class DefaultIndexWatcherWorker implements Runnable
     {
         while (!isStopped())
         {
-            processFolders();
-            processFiles();
-            timeout();
+            try
+            {
+                processFolders();
+                processFiles();
+                timeout();
+            }
+            catch (Exception e)
+            {
+                LOG.error("[IndexWatcher]: " + e.getMessage(), e);
+            }
         }
     }
 
@@ -42,21 +52,25 @@ class DefaultIndexWatcherWorker implements Runnable
 
         for (String folderPath : folderPaths)
         {
-            File folder = new File(folderPath);
-
-            if (!folder.exists() || !folder.isDirectory())
-            {
-                registry.deleteFolderRecord(folderPath);
-                continue;
-            }
-
             try
             {
+                File folder = new File(folderPath);
+
+                if (!folder.exists() || !folder.isDirectory())
+                {
+                    LOG.debug("[IndexWatcher]: Folder was removed: " + folderPath);
+
+                    registry.deleteFolderRecord(folderPath);
+                    continue;
+                }
+
                 Files.list(folder.toPath())
                     .filter(Files::isRegularFile)
                     .filter(p -> fileFilter.isAccepted(p.toString()))
                     .filter(path -> registry.getFileRecord(path.toString()) == null)
                     .forEach(path -> {
+                        LOG.debug("[IndexWatcher]: New file was added: " + path);
+
                         registry.setFileRecord(
                             path.toString(),
                             new IndexWatcherFileRecord(
@@ -69,9 +83,9 @@ class DefaultIndexWatcherWorker implements Runnable
                         fileIndexer.index(new FileIndexerOptions(path.toString()));
                     });
             }
-            catch (IOException ioe)
+            catch (Exception e)
             {
-                //TODO
+                LOG.error("[IndexWatcher]: Failed to process the folder: " + folderPath, e);
             }
         }
     }
@@ -82,27 +96,38 @@ class DefaultIndexWatcherWorker implements Runnable
 
         for (String filePath : filePaths)
         {
-            File file = new File(filePath);
-
-            if (!file.exists() || !file.isFile())
+            try
             {
-                fileIndexer.delete(new FileIndexerOptions(filePath));
-                registry.deleteFolderRecord(filePath);
-                continue;
+                File file = new File(filePath);
+
+                if (!file.exists() || !file.isFile())
+                {
+                    LOG.debug("[IndexWatcher]: File was removed: " + filePath);
+
+                    fileIndexer.delete(new FileIndexerOptions(filePath));
+                    registry.deleteFileRecord(filePath);
+                    continue;
+                }
+
+                IndexWatcherFileRecord fileRecord = registry.getFileRecord(filePath);
+
+                if (fileRecord == null
+                    || fileRecord.getRegistryState() == IndexWatcherRegistryState.New
+                    || fileRecord.getRegistryState() == IndexWatcherRegistryState.Deleted)
+                {
+                    continue;
+                }
+
+                if (file.lastModified() > fileRecord.getLastModified())
+                {
+                    LOG.debug("[IndexWatcher]: File was updated: " + filePath);
+
+                    fileIndexer.index(new FileIndexerOptions(file.getAbsolutePath()));
+                }
             }
-
-            IndexWatcherFileRecord fileRecord = registry.getFileRecord(filePath);
-
-            if (fileRecord == null
-                || fileRecord.getRegistryState() == IndexWatcherRegistryState.New
-                || fileRecord.getRegistryState() == IndexWatcherRegistryState.Deleted)
+            catch (Exception e)
             {
-                continue;
-            }
-
-            if (file.lastModified() > fileRecord.getLastModified())
-            {
-                fileIndexer.index(new FileIndexerOptions(file.getAbsolutePath()));
+                LOG.error("[IndexWatcher]: Failed to process file: " + filePath, e);
             }
         }
     }
@@ -113,7 +138,10 @@ class DefaultIndexWatcherWorker implements Runnable
         {
             Thread.sleep(configuration.getTimeout());
         }
-        catch (InterruptedException ie) {}
+        catch (InterruptedException ie)
+        {
+            LOG.error("[IndexWatcher]: Interrupted", ie);
+        }
     }
 
     private synchronized boolean isStopped()

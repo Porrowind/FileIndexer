@@ -15,7 +15,7 @@ public class InfoCommand extends AbstractCommand
     }
 
     @Override
-    public ActionResult execute(ApplicationContext context, Map<String, String> args)
+    ActionResult executeSafe(ApplicationContext context, Map<String, String> args)
     {
         System.out.print(info);
         return ActionResult.success();

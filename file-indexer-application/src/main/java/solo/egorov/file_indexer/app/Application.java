@@ -64,6 +64,7 @@ public class Application
             catch (Exception e)
             {
                 LOGGER.error("Exception occurred: " + e.getMessage(), e);
+                System.out.println("Exception occurred: " + e.getMessage());
             }
         }
     }

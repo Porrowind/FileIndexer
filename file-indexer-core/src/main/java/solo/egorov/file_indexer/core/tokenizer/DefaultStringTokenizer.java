@@ -3,7 +3,6 @@ package solo.egorov.file_indexer.core.tokenizer;
 import solo.egorov.file_indexer.core.IndexedText;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 
 public class DefaultStringTokenizer extends AbstractTokenizer<String> implements StringTokenizer
 {
@@ -27,7 +26,7 @@ public class DefaultStringTokenizer extends AbstractTokenizer<String> implements
         {
             return streamTokenizer.tokenize(asd, ordered);
         }
-        catch (IOException | TokenizerException e)
+        catch (Exception e)
         {
             throw new TokenizerException("Failed to tokenize string", e);
         }
