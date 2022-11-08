@@ -45,7 +45,6 @@ public class DefaultQueryProcessor implements QueryProcessor
         return processCompositeQuery(indexedQuery, query, storage);
     }
 
-    //TODO: Document with positions
     private List<Document> processCompositeQuery(IndexedText indexedQuery, FileIndexerQuery query, IndexStorage storage)
     {
         Map<Long, List<PotentialMatch>> potentialMatchesById = new HashMap<>();
