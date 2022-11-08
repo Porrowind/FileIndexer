@@ -100,21 +100,21 @@ class DefaultIndexWatcherWorker implements Runnable
             {
                 File file = new File(filePath);
 
-                if (!file.exists() || !file.isFile())
-                {
-                    LOG.debug("[IndexWatcher]: File was removed: " + filePath);
-
-                    fileIndexer.delete(new FileIndexerOptions(filePath));
-                    registry.deleteFileRecord(filePath);
-                    continue;
-                }
-
                 IndexWatcherFileRecord fileRecord = registry.getFileRecord(filePath);
 
                 if (fileRecord == null
                     || fileRecord.getRegistryState() == IndexWatcherRegistryState.New
                     || fileRecord.getRegistryState() == IndexWatcherRegistryState.Deleted)
                 {
+                    continue;
+                }
+
+                if (!file.exists() || !file.isFile())
+                {
+                    LOG.debug("[IndexWatcher]: File was removed: " + filePath);
+
+                    registry.deleteFileRecord(filePath);
+                    fileIndexer.delete(new FileIndexerOptions(filePath));
                     continue;
                 }
 

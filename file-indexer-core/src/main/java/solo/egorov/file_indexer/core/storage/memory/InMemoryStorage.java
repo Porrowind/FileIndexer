@@ -159,6 +159,7 @@ public class InMemoryStorage implements IndexStorage
             if (existingDocumentRecord != null)
             {
                 existingDocumentRecord.setDocumentState(DocumentState.DELETED);
+                activeDocumentRecordsByUri.remove(uri);
                 activeDocumentRecordsById.remove(existingDocumentRecord.getDocumentId());
                 deletedDocumentRecords.add(existingDocumentRecord);
             }

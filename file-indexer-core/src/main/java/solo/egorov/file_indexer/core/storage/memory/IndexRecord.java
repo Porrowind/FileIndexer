@@ -1,16 +1,13 @@
 package solo.egorov.file_indexer.core.storage.memory;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 class IndexRecord
 {
-    private Long documentId;
-    private Set<Long> positions = new HashSet<>();
+    private final Long documentId;
+    private final List<Long> positions;
 
-    public IndexRecord() {}
-
-    public IndexRecord(Long documentId, Set<Long> positions)
+    public IndexRecord(Long documentId, List<Long> positions)
     {
         this.documentId = documentId;
         this.positions = positions;
@@ -21,20 +18,8 @@ class IndexRecord
         return documentId;
     }
 
-    public IndexRecord setDocumentId(Long documentId)
-    {
-        this.documentId = documentId;
-        return this;
-    }
-
-    public Set<Long> getPositions()
+    public List<Long> getPositions()
     {
         return positions;
-    }
-
-    public IndexRecord setPositions(Set<Long> positions)
-    {
-        this.positions = positions;
-        return this;
     }
 }

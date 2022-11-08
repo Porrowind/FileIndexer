@@ -121,7 +121,7 @@ public class DefaultQueryProcessor implements QueryProcessor
 
                 List<PotentialMatch> newPotentialMatches = new ArrayList<>(currentPotentialMatches.size());
 
-                Set<Long> resultTokenPositions = matchingDocument.getDataIndex().getToken(currentQueryToken.getData()).getPositions();
+                List<Long> resultTokenPositions = matchingDocument.getDataIndex().getToken(currentQueryToken.getData()).getPositions();
 
                 outer: for (Long resultTokenPosition : resultTokenPositions)
                 {

@@ -86,11 +86,6 @@ class DefaultFileIndexerWorker implements Runnable
             File file = new File(path);
             if (!file.exists() || !file.isFile())
             {
-                if (indexWatcherRegistry != null)
-                {
-                    indexWatcherRegistry.deleteFileRecord(path);
-                }
-
                 return;
             }
 
@@ -160,7 +155,14 @@ class DefaultFileIndexerWorker implements Runnable
 
             if (indexWatcherRegistry != null)
             {
-                indexWatcherRegistry.deleteFileRecord(path);
+                indexWatcherRegistry.setFileRecord(
+                    path,
+                    new IndexWatcherFileRecord(
+                        path,
+                        IndexWatcherRegistryState.Deleted,
+                        -1
+                    )
+                );
             }
 
             LOG.debug("[IndexWorker] Finished deleting the path from index: " + path);

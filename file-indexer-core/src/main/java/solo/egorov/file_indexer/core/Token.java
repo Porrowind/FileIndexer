@@ -1,8 +1,8 @@
 package solo.egorov.file_indexer.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.List;
 
 /**
  * Represents single token
@@ -17,7 +17,7 @@ public class Token
     /**
      * Token positions
      */
-    private Set<Long> positions = new TreeSet<>();
+    private List<Long> positions = new ArrayList<>();
 
     public Token(String data)
     {
@@ -30,7 +30,7 @@ public class Token
         this.positions.add(position);
     }
 
-    public Token(String data, Collection<Long> positions)
+    public Token(String data, List<Long> positions)
     {
         this.data = data;
         this.positions.addAll(positions);
@@ -47,7 +47,7 @@ public class Token
         return this;
     }
 
-    public Set<Long> getPositions()
+    public List<Long> getPositions()
     {
         return positions;
     }
