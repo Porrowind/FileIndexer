@@ -11,6 +11,8 @@
     </parent>
 
     <artifactId>file-indexer-core</artifactId>
+    <name>File Indexer Core</name>
+    <description>File Indexer Core</description>
 
     <dependencies>
         <dependency>

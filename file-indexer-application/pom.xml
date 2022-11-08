@@ -11,6 +11,8 @@
     </parent>
 
     <artifactId>file-indexer-application</artifactId>
+    <name>File Indexer Application</name>
+    <description>File Indexer Application</description>
 
     <dependencies>
         <dependency>
@@ -55,7 +57,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>libs/</classpathPrefix>
-                            <mainClass>hireright.development.api.loadtest.Application</mainClass>
+                            <mainClass>solo.egorov.file_indexer.app.Application</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -72,7 +74,7 @@
                         <configuration>
                             <archive>
                                 <manifest>
-                                    <mainClass>hireright.development.api.loadtest.Application</mainClass>
+                                    <mainClass>solo.egorov.file_indexer.app.Application</mainClass>
                                 </manifest>
                             </archive>
                             <descriptorRefs>
