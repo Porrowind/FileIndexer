@@ -86,6 +86,14 @@ class DefaultFileIndexerWorker implements Runnable
             File file = new File(path);
             if (!file.exists() || !file.isFile())
             {
+                if (indexWatcherRegistry != null)
+                {
+                    indexWatcherRegistry.deleteFileRecord(path);
+                }
+
+                indexStorage.delete(path);
+
+                LOG.debug("[IndexWorker] Finished indexing the path, file is not exist: " + path);
                 return;
             }
 
@@ -114,6 +122,7 @@ class DefaultFileIndexerWorker implements Runnable
                     );
                 }
 
+                LOG.debug("[IndexWorker] Finished indexing the path, file is already indexed: " + path);
                 return;
             }
 
@@ -155,14 +164,19 @@ class DefaultFileIndexerWorker implements Runnable
 
             if (indexWatcherRegistry != null)
             {
-                indexWatcherRegistry.setFileRecord(
-                    path,
-                    new IndexWatcherFileRecord(
+                IndexWatcherFileRecord fileRecord = indexWatcherRegistry.getFileRecord(path);
+
+                if (fileRecord != null)
+                {
+                    indexWatcherRegistry.setFileRecord(
                         path,
-                        IndexWatcherRegistryState.Deleted,
-                        -1
-                    )
-                );
+                        new IndexWatcherFileRecord(
+                            path,
+                            IndexWatcherRegistryState.Deleted,
+                            -1
+                        )
+                    );
+                }
             }
 
             LOG.debug("[IndexWorker] Finished deleting the path from index: " + path);
