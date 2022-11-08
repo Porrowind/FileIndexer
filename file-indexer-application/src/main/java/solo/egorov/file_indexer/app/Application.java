@@ -32,7 +32,7 @@ public class Application
         ApplicationConfiguration applicationConfiguration = applicationConfigurationResolver.resolve(args);
 
         ApplicationContext applicationContext = new ApplicationContext()
-            .setFileTraveler(new FileTraveler())
+            .setFileTraveler(new FileTraveler(applicationConfiguration.isProcessHiddenFiles()))
             .setFileIndexer(createFileIndexer(applicationConfiguration));
 
         applicationContext.getFileIndexer().start();

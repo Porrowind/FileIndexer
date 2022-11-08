@@ -2,6 +2,7 @@ package solo.egorov.file_indexer.app.file;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,14 +13,25 @@ import java.util.stream.Collectors;
 public class FileTraveler
 {
     private Path currentPath;
+    private boolean showHiddenFiles = true;
 
     public FileTraveler()
     {
-        this("/");
+        this("/", true);
     }
 
-    public FileTraveler(String initialPath)
+    public FileTraveler(Boolean showHiddenFiles)
     {
+        this("/", showHiddenFiles);
+    }
+
+    public FileTraveler(String initialPath, Boolean showHiddenFiles)
+    {
+        if (showHiddenFiles != null)
+        {
+            this.showHiddenFiles = showHiddenFiles;
+        }
+
         currentPath = Paths.get(initialPath);
     }
 
@@ -42,6 +54,7 @@ public class FileTraveler
     {
         return Files.list(currentPath)
             .filter(Files::isDirectory)
+            .filter(f -> showHiddenFiles || !new File(f.toString()).isHidden())
             .map(Path::toString)
             .sorted()
             .collect(Collectors.toList());
@@ -51,6 +64,7 @@ public class FileTraveler
     {
         return Files.list(currentPath)
             .filter(Files::isRegularFile)
+            .filter(f -> showHiddenFiles || !new File(f.toString()).isHidden())
             .map(Path::toString)
             .sorted()
             .collect(Collectors.toList());
