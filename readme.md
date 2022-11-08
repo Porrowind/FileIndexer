@@ -1,7 +1,16 @@
 # Simple file indexer
 Allows to:
+
 - Index files of different formats and folders
 - Monitor files and folders changes 
+- Search in index, including composite and wildcard queries
+
+Search examples:
+
+- search Simple
+- search Wild*rd
+- search Composite Query
+- search Composite Wi*rd Query
 
 ## Startup Parameters:
 - **configurationPath**

@@ -8,12 +8,13 @@
     <artifactId>file-indexer-aggregator</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
+    <name>File Indexer Aggregator</name>
+    <description>File Indexer Aggregator</description>
+
     <modules>
         <module>file-indexer-core</module>
         <module>file-indexer-application</module>
     </modules>
-    <name>File Indexer Aggregator</name>
-    <description>File Indexer Aggregator</description>
 
     <properties>
         <maven.compiler.target>1.8</maven.compiler.target>
