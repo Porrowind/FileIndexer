@@ -1,5 +1,6 @@
 package solo.egorov.file_indexer.core;
 
+import solo.egorov.file_indexer.core.event.FileIndexerEventBusConfiguration;
 import solo.egorov.file_indexer.core.file.FileReader;
 import solo.egorov.file_indexer.core.file.filter.FileFilter;
 import solo.egorov.file_indexer.core.query.QueryProcessor;
@@ -29,6 +30,11 @@ public class FileIndexerConfiguration
      * {@link solo.egorov.file_indexer.core.watcher.IndexWatcher} configuration
      */
     private final IndexWatcherConfiguration indexWatcherConfiguration = new IndexWatcherConfiguration();
+
+    /**
+     * {@link solo.egorov.file_indexer.core.event.FileIndexerEventBus} configuration
+     */
+    private final FileIndexerEventBusConfiguration eventBusConfiguration = new FileIndexerEventBusConfiguration();
 
     /**
      * Amount of threads to process files in parallel
@@ -117,6 +123,11 @@ public class FileIndexerConfiguration
         return indexWatcherConfiguration;
     }
 
+    public FileIndexerEventBusConfiguration getEventBusConfiguration()
+    {
+        return eventBusConfiguration;
+    }
+
     public int getWorkerThreadsCount()
     {
         return workerThreadsCount;
@@ -124,6 +135,16 @@ public class FileIndexerConfiguration
 
     public FileIndexerConfiguration setWorkerThreadsCount(int workerThreadsCount)
     {
+        if (workerThreadsCount < 1)
+        {
+            workerThreadsCount = 1;
+        }
+
+        if (workerThreadsCount > 32)
+        {
+            workerThreadsCount = 32;
+        }
+
         this.workerThreadsCount = workerThreadsCount;
         return this;
     }

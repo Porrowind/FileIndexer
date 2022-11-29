@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Default {@link QueryProcessor} implementation
@@ -39,7 +38,7 @@ public class DefaultQueryProcessor implements QueryProcessor
         if (queryTokens.size() == 1 && queryTokens.get(0).getPositions().size() == 1)
         {
             Token queryToken = queryTokens.get(0);
-            return storage.get(new IndexStorageQuery(queryToken.getData()));
+            return storage.search(new IndexStorageQuery(queryToken.getData()));
         }
 
         return processCompositeQuery(indexedQuery, query, storage);
@@ -66,7 +65,7 @@ public class DefaultQueryProcessor implements QueryProcessor
 
             if (i == 0)
             {
-                List<Document> matchingDocuments = storage.get(new IndexStorageQuery(currentQueryToken.getData()));
+                List<Document> matchingDocuments = storage.search(new IndexStorageQuery(currentQueryToken.getData()));
 
                 if (matchingDocuments.size() == 0)
                 {
@@ -99,7 +98,7 @@ public class DefaultQueryProcessor implements QueryProcessor
             }
             else
             {
-                matchingDocuments = storage.get(new IndexStorageQuery(currentQueryToken.getData()));
+                matchingDocuments = storage.search(new IndexStorageQuery(currentQueryToken.getData()));
                 processedTokens.put(currentQueryToken, matchingDocuments);
             }
 

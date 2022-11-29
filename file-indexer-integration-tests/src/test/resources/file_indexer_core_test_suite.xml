@@ -1,0 +1,38 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="File Indexer Core Test Suite">
+    <test name="Text Generator Test">
+        <classes>
+            <class name="solo.egorov.file_indexer.core.generator.TextGeneratorTest" />
+        </classes>
+    </test>
+    <test name="Simple Test">
+        <classes>
+            <class name="solo.egorov.file_indexer.core.SimpleTest" />
+        </classes>
+    </test>
+    <test name="Event Engine Test">
+        <classes>
+            <class name="solo.egorov.file_indexer.core.FileIndexerEventEngineTest" />
+        </classes>
+    </test>
+    <test name="Tokenizer Test">
+        <classes>
+            <class name="solo.egorov.file_indexer.core.FileIndexerTokenizerTest" />
+        </classes>
+    </test>
+    <test name="File Filter Test">
+        <classes>
+            <class name="solo.egorov.file_indexer.core.FileIndexerFileFilterTest" />
+        </classes>
+    </test>
+    <test name="Main Test">
+        <classes>
+            <class name="solo.egorov.file_indexer.core.FileIndexerMainTest" />
+        </classes>
+    </test>
+    <test name="Index Watcher Test">
+        <classes>
+            <class name="solo.egorov.file_indexer.core.FileIndexerWatcherTest" />
+        </classes>
+    </test>
+</suite>

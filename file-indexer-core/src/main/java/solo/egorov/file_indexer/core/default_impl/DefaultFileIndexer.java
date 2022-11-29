@@ -6,6 +6,10 @@ import solo.egorov.file_indexer.core.FileIndexerOptions;
 import solo.egorov.file_indexer.core.FileIndexer;
 import solo.egorov.file_indexer.core.FileIndexerConfiguration;
 import solo.egorov.file_indexer.core.FileIndexerException;
+import solo.egorov.file_indexer.core.default_impl.event.DefaultFileIndexerEventBus;
+import solo.egorov.file_indexer.core.event.FileDiscardedEvent;
+import solo.egorov.file_indexer.core.event.FileIndexerEventBus;
+import solo.egorov.file_indexer.core.event.FileProcessingErrorEvent;
 import solo.egorov.file_indexer.core.file.FileReader;
 import solo.egorov.file_indexer.core.file.LocalStorageFileReader;
 import solo.egorov.file_indexer.core.file.filter.CompositeFileFilter;
@@ -30,12 +34,12 @@ import solo.egorov.file_indexer.core.tokenizer.filter.character.QueryCharacterFi
 import solo.egorov.file_indexer.core.tokenizer.filter.token.CompositeTokenFilter;
 import solo.egorov.file_indexer.core.tokenizer.filter.token.TokenFilter;
 import solo.egorov.file_indexer.core.tokenizer.filter.token.TokenLengthFilter;
-import solo.egorov.file_indexer.core.watcher.DefaultIndexWatcher;
+import solo.egorov.file_indexer.core.default_impl.watcher.DefaultIndexWatcher;
 import solo.egorov.file_indexer.core.watcher.IndexWatcher;
-import solo.egorov.file_indexer.core.watcher.IndexWatcherFileRecord;
-import solo.egorov.file_indexer.core.watcher.IndexWatcherFolderRecord;
-import solo.egorov.file_indexer.core.watcher.IndexWatcherRegistry;
-import solo.egorov.file_indexer.core.watcher.IndexWatcherRegistryState;
+import solo.egorov.file_indexer.core.default_impl.watcher.IndexWatcherFileRecord;
+import solo.egorov.file_indexer.core.default_impl.watcher.IndexWatcherFolderRecord;
+import solo.egorov.file_indexer.core.default_impl.watcher.IndexWatcherRegistry;
+import solo.egorov.file_indexer.core.default_impl.watcher.IndexWatcherRegistryState;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,6 +70,8 @@ public class DefaultFileIndexer implements FileIndexer
 
     private final IndexWatcherRegistry indexWatcherRegistry;
     private final IndexWatcher indexWatcher;
+
+    private final DefaultFileIndexerEventBus eventBus;
 
     private final StringTokenizer fileTokenizer;
     private final StringTokenizer queryTokenizer;
@@ -122,6 +128,8 @@ public class DefaultFileIndexer implements FileIndexer
             this.indexWatcherRegistry = null;
             this.indexWatcher = null;
         }
+
+        this.eventBus = new DefaultFileIndexerEventBus(configuration.getEventBusConfiguration());
     }
 
     private CharacterFilter getCharacterFilter(FileIndexerConfiguration configuration)
@@ -175,6 +183,8 @@ public class DefaultFileIndexer implements FileIndexer
     {
         try
         {
+            eventBus.start();
+
             if (indexWatcher != null)
             {
                 indexWatcher.start();
@@ -191,18 +201,41 @@ public class DefaultFileIndexer implements FileIndexer
     @Override
     public void stop() throws FileIndexerException
     {
+        Exception thrownException = null;
+
         try
         {
-            if (indexWatcher != null)
+            eventBus.stop();
+        }
+        catch (Exception e)
+        {
+            thrownException = e;
+        }
+
+        if (indexWatcher != null)
+        {
+            try
             {
                 indexWatcher.stop();
             }
+            catch (Exception e)
+            {
+                thrownException = e;
+            }
+        }
 
+        try
+        {
             stopWorkers();
         }
         catch (Exception e)
         {
-            throw new FileIndexerException("Failed to stop the index", e);
+            thrownException = e;
+        }
+
+        if (thrownException != null)
+        {
+            throw new FileIndexerException("Failed to stop the index", thrownException);
         }
     }
 
@@ -249,6 +282,12 @@ public class DefaultFileIndexer implements FileIndexer
     {
         try
         {
+            if (!fileFilter.isAccepted(path))
+            {
+                eventBus.publish(new FileDiscardedEvent(path, "File was filtered out"));
+                return;
+            }
+
             if (indexWatcherRegistry != null)
             {
                 indexWatcherRegistry.setFileRecord(
@@ -265,6 +304,7 @@ public class DefaultFileIndexer implements FileIndexer
         }
         catch (Exception e)
         {
+            eventBus.publish(new FileProcessingErrorEvent(path, e.getMessage(), e));
             throw new FileIndexerException("Failed to index file: " + path);
         }
     }
@@ -277,7 +317,6 @@ public class DefaultFileIndexer implements FileIndexer
 
             Files.list(path)
                 .filter(Files::isRegularFile)
-                .filter(p -> fileFilter.isAccepted(p.toString()))
                 .forEach(filePath -> indexSingleFile(filePath.toString()));
 
             if (indexWatcherRegistry != null)
@@ -333,7 +372,6 @@ public class DefaultFileIndexer implements FileIndexer
 
                 Files.list(path)
                     .filter(Files::isRegularFile)
-                    .filter(p -> fileFilter.isAccepted(p.toString()))
                     .forEach(filePath -> defaultFileIndexerQueue.addDeleteTask(filePath.toString()));
             }
             else
@@ -348,6 +386,19 @@ public class DefaultFileIndexer implements FileIndexer
     }
 
     @Override
+    public Document get(FileIndexerOptions options) throws FileIndexerException
+    {
+        try
+        {
+            return indexStorage.get(options.getPath());
+        }
+        catch (Exception e)
+        {
+            throw new FileIndexerException("Failed to get document from index", e);
+        }
+    }
+
+    @Override
     public List<Document> search(FileIndexerQuery query) throws FileIndexerException
     {
         return search(query, this.queryProcessor);
@@ -356,7 +407,14 @@ public class DefaultFileIndexer implements FileIndexer
     @Override
     public List<Document> search(FileIndexerQuery query, QueryProcessor queryProcessor)  throws FileIndexerException
     {
-        return queryProcessor.process(query, indexStorage, queryTokenizer);
+        try
+        {
+            return queryProcessor.process(query, indexStorage, queryTokenizer);
+        }
+        catch (Exception e)
+        {
+            throw new FileIndexerException("Failed to perform search", e);
+        }
     }
 
     @Override
@@ -372,12 +430,19 @@ public class DefaultFileIndexer implements FileIndexer
         }
     }
 
+    @Override
+    public FileIndexerEventBus getEventBus()
+    {
+        return eventBus;
+    }
+
     private void startWorkers()
     {
         for (int i = 0; i < configuration.getWorkerThreadsCount(); i++)
         {
             DefaultFileIndexerWorker defaultFileIndexerWorker = new DefaultFileIndexerWorker(
                 defaultFileIndexerQueue,
+                eventBus,
                 fileLock,
                 fileReader,
                 indexStorage,

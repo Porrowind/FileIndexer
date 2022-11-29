@@ -1,4 +1,4 @@
-package solo.egorov.file_indexer.core.watcher;
+package solo.egorov.file_indexer.core.default_impl.watcher;
 
 public enum IndexWatcherRegistryState
 {

@@ -14,6 +14,7 @@
     <modules>
         <module>file-indexer-core</module>
         <module>file-indexer-application</module>
+        <module>file-indexer-integration-tests</module>
     </modules>
 
     <properties>

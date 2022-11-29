@@ -110,18 +110,20 @@ public class InMemoryStorage implements IndexStorage
     }
 
     @Override
-    public byte[] getDocumentHash(String uri) throws IndexStorageException
+    public Document get(String uri) throws IndexStorageException
     {
         try
         {
-            byte[] result = null;
+            Document result = null;
 
             DOCUMENT_RECORDS_LOCK.readLock().lock();
             DocumentRecord documentRecord = activeDocumentRecordsByUri.get(uri);
 
             if (documentRecord != null && documentRecord.getHash() != null)
             {
-                result = Arrays.copyOf(documentRecord.getHash(), documentRecord.getHash().length);
+                result = new Document(uri)
+                    .setId(documentRecord.getDocumentId())
+                    .setHash(Arrays.copyOf(documentRecord.getHash(), documentRecord.getHash().length));
             }
             DOCUMENT_RECORDS_LOCK.readLock().unlock();
 
@@ -134,7 +136,7 @@ public class InMemoryStorage implements IndexStorage
     }
 
     @Override
-    public List<Document> get(IndexStorageQuery storageQuery) throws IndexStorageException
+    public List<Document> search(IndexStorageQuery storageQuery) throws IndexStorageException
     {
         try
         {
@@ -330,5 +332,15 @@ public class InMemoryStorage implements IndexStorage
         Set<String> keys = new HashSet<>(indexContainer.keySet());
         INDEX_RECORDS_LOCK.readLock().unlock();
         return keys;
+    }
+
+    private static final class DocumentIdGenerator
+    {
+        private volatile long nextId = 1;
+
+        synchronized long getNextId()
+        {
+            return nextId++;
+        }
     }
 }

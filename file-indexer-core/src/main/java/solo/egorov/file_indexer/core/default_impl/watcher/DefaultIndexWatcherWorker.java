@@ -1,10 +1,11 @@
-package solo.egorov.file_indexer.core.watcher;
+package solo.egorov.file_indexer.core.default_impl.watcher;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import solo.egorov.file_indexer.core.FileIndexer;
 import solo.egorov.file_indexer.core.FileIndexerOptions;
 import solo.egorov.file_indexer.core.file.filter.FileFilter;
+import solo.egorov.file_indexer.core.watcher.IndexWatcherConfiguration;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -52,6 +53,11 @@ class DefaultIndexWatcherWorker implements Runnable
 
         for (String folderPath : folderPaths)
         {
+            if (isStopped())
+            {
+                return;
+            }
+
             try
             {
                 File folder = new File(folderPath);
@@ -96,6 +102,11 @@ class DefaultIndexWatcherWorker implements Runnable
 
         for (String filePath : filePaths)
         {
+            if (isStopped())
+            {
+                return;
+            }
+
             try
             {
                 File file = new File(filePath);

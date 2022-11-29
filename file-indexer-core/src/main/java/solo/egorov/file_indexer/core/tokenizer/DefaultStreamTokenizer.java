@@ -69,6 +69,12 @@ public class DefaultStreamTokenizer extends AbstractTokenizer<InputStream> imple
             throw new TokenizerException("Failed to tokenize stream", e);
         }
 
+        String text = normalizeText(currentToken.toString());
+        if (StringUtils.isNotEmpty(text) && getTokenFilter().isAccepted(text))
+        {
+            indexedText.addToken(new Token(text, currentPosition));
+        }
+
         return indexedText;
     }
 }

@@ -1,0 +1,46 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="File Indexer Soft Load Test Suite">
+    <test name="Test Many Large Files With Unique Words">
+        <parameter name="filesCount" value="100"/>
+        <parameter name="wordsCount" value="20000"/>
+        <classes>
+            <class name="solo.egorov.file_indexer.load.FileIndexerLoadTest"/>
+        </classes>
+    </test>
+
+    <test name="Test Many Small Files With Unique Words">
+        <parameter name="filesCount" value="500"/>
+        <parameter name="wordsCount" value="4000"/>
+        <classes>
+            <class name="solo.egorov.file_indexer.load.FileIndexerLoadTest"/>
+        </classes>
+    </test>
+
+    <test name="Test Many Large Files With Fixed Words Pool">
+        <parameter name="filesCount" value="100"/>
+        <parameter name="wordsCount" value="40000"/>
+        <parameter name="poolSize" value="30000"/>
+        <classes>
+            <class name="solo.egorov.file_indexer.load.FileIndexerLoadTest"/>
+        </classes>
+    </test>
+
+    <test name="Test Many Small Files With Fixed Words Pool">
+        <parameter name="filesCount" value="500"/>
+        <parameter name="wordsCount" value="8000"/>
+        <parameter name="poolSize" value="30000"/>
+        <classes>
+            <class name="solo.egorov.file_indexer.load.FileIndexerLoadTest"/>
+        </classes>
+    </test>
+
+    <test name="Test Multiple Threads Working With Index In Parallel">
+        <parameter name="foldersCount" value="20"/>
+        <parameter name="filesCount" value="100"/>
+        <parameter name="wordsCount" value="1000"/>
+        <parameter name="threadsCount" value="16"/>
+        <classes>
+            <class name="solo.egorov.file_indexer.load.FileIndexerMultithreadingTest"/>
+        </classes>
+    </test>
+</suite>

@@ -12,11 +12,13 @@ class DefaultFileIndexerWorkerTask
 
     private final String path;
     private final IndexWorkerTaskType taskType;
+    private final long submittedTimestamp;
 
     private DefaultFileIndexerWorkerTask(IndexWorkerTaskType taskType, String path)
     {
         this.taskType = taskType;
         this.path = path;
+        this.submittedTimestamp = System.currentTimeMillis();
     }
 
     public static DefaultFileIndexerWorkerTask newAddTask(String path)
@@ -42,6 +44,11 @@ class DefaultFileIndexerWorkerTask
     public boolean isDeleteTask()
     {
         return taskType == IndexWorkerTaskType.Delete;
+    }
+
+    public long getSubmittedTimestamp()
+    {
+        return submittedTimestamp;
     }
 
     @Override

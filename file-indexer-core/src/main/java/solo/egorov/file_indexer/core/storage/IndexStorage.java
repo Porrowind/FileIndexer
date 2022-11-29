@@ -18,13 +18,13 @@ public interface IndexStorage
     void add(Document document) throws IndexStorageException;
 
     /**
-     * Get document hash from storage
+     * Get document data from storage without indexed text
      *
      * @param uri Document external identifier
-     * @return document hash if found
+     * @return document data
      * @throws IndexStorageException In case of any exception
      */
-    byte[] getDocumentHash(String uri) throws IndexStorageException;
+    Document get(String uri) throws IndexStorageException;
 
     /**
      * Find documents by query
@@ -33,7 +33,7 @@ public interface IndexStorage
      * @return List of matching documents if any
      * @throws IndexStorageException In case of any exception
      */
-    List<Document> get(IndexStorageQuery storageQuery) throws IndexStorageException;
+    List<Document> search(IndexStorageQuery storageQuery) throws IndexStorageException;
 
     /**
      * Delete document from storage

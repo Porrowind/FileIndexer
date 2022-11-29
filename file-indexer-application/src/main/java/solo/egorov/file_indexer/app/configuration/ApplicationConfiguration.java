@@ -51,7 +51,7 @@ public class ApplicationConfiguration
 
     public String getStopWordsPath()
     {
-        return getString(CONFIGURATION_PATH);
+        return getString(STOP_WORDS_PATH);
     }
 
     public Integer getWorkerThreadsCount()

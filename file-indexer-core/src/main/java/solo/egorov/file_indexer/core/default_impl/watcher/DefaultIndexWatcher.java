@@ -1,7 +1,9 @@
-package solo.egorov.file_indexer.core.watcher;
+package solo.egorov.file_indexer.core.default_impl.watcher;
 
 import solo.egorov.file_indexer.core.FileIndexer;
 import solo.egorov.file_indexer.core.file.filter.FileFilter;
+import solo.egorov.file_indexer.core.watcher.IndexWatcher;
+import solo.egorov.file_indexer.core.watcher.IndexWatcherConfiguration;
 
 public class DefaultIndexWatcher implements IndexWatcher
 {
