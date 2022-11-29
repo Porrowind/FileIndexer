@@ -525,4 +525,50 @@ public class FileIndexerMainTest extends AbstractFileIndexerTest
         assertNotNull(documents);
         assertEquals(documents.size(), 0);
     }
+
+    @Test
+    public void testSearchWithNonEnglishWords()
+    {
+        String filename1 = "testSearchWithNonEnglishWords_1.txt";
+        String filename2 = "testSearchWithNonEnglishWords_2.txt";
+
+        copyFileFromResources("txt/txt_sample_1.txt", filename1);
+        copyFileFromResources("txt/txt_sample_2.txt", filename2);
+
+        FilesAddedListener filesAddedListener = new FilesAddedListener(
+            formatPath(filename1),
+            formatPath(filename2)
+        );
+        fileIndexer.getEventBus().subscribe(filesAddedListener);
+
+        List<Document> documents = fileIndexer.search(new FileIndexerQuery("Txt file sample"));
+        assertNotNull(documents);
+        assertEquals(documents.size(), 0);
+
+        fileIndexer.index(new FileIndexerOptions(formatPath(filename1)));
+        fileIndexer.index(new FileIndexerOptions(formatPath(filename2)));
+
+        assertTrue(waitUntil(v -> filesAddedListener.isAllAdded()));
+
+        documents = fileIndexer.search(new FileIndexerQuery("Txt file sample"));
+        assertNotNull(documents);
+        assertEquals(documents.size(), 2);
+        documentWithPathPresented(documents, formatPath(filename1));
+        documentWithPathPresented(documents, formatPath(filename2));
+
+        documents = fileIndexer.search(new FileIndexerQuery("Txt file sample number one"));
+        assertNotNull(documents);
+        assertEquals(documents.size(), 1);
+        documentWithPathPresented(documents, formatPath(filename1));
+
+        documents = fileIndexer.search(new FileIndexerQuery("Txt file sample number two"));
+        assertNotNull(documents);
+        assertEquals(documents.size(), 1);
+        documentWithPathPresented(documents, formatPath(filename2));
+
+        documents = fileIndexer.search(new FileIndexerQuery("Русский текст"));
+        assertNotNull(documents);
+        assertEquals(documents.size(), 1);
+        documentWithPathPresented(documents, formatPath(filename1));
+    }
 }
